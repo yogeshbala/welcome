@@ -1,0 +1,330 @@
+tutor.model.ts
+
+
+export interface Tutor{
+    tutorId:number;
+    name:string;
+    email:string;
+    subjectsOffered:string;
+    contactNumber:string;
+    availability:string;
+}
+
+---------------------------------------------------------------------
+
+
+tutor.service.ts
+
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Tutor } from '../models/tutor.model';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class TutorService {
+
+  constructor(private http:HttpClient) { }
+  public apiUrl:string='https://8080-cacbbeabcdeabfeef313048101bfbbcbcbbbecbcaffour.premiumproject.examly.io/';
+  addTutor(tutor:Tutor):Observable<Tutor>{
+    return this.http.post<Tutor>(this.apiUrl+'api/Tutoring',tutor);
+  }
+  getTutors():Observable<Tutor[]>{
+    return this.http.get<Tutor[]>(this.apiUrl+'api/Tutoring');
+  }
+  deleteTutor(tutorId:number):Observable<void>{
+    return this.http.delete<void>(this.apiUrl+'api/Tutoring'+'/'+tutorId);
+  }
+  getTutor(tutorId:number):Observable<Tutor>{
+    return this.http.get<Tutor>(this.apiUrl+'api/Tutoring'+'/'+tutorId);
+  }
+  
+}
+
+------------------------------------------------------------------
+
+header.component.ts
+
+
+import { Component, OnInit } from '@angular/core';
+
+@Component({
+  selector: 'app-header',
+  templateUrl: './header.component.html',
+  styleUrls: ['./header.component.css']
+})
+export class HeaderComponent implements OnInit {
+
+  constructor() { }
+
+  ngOnInit(): void {
+  }
+
+}
+
+------------------------------------------------------------------
+
+
+header.component.html
+
+
+<h1>Remote Tutoring App <a [routerLink]="['/addNewTutor']" >Add New Tutor</a><a [routerLink]="['/viewTutors']" >View Tutors</a></h1>
+
+------------------------------------------------------------------
+
+
+tutor-form.component.html
+
+
+<h2>Add Tutor</h2>
+<form (submit)="addTutor()">
+    <label>name</label>
+    <input type="text" [(ngModel)]="newTutor.name"  name="name" id="name" #name="ngModel" required>
+    <div class="error-message" *ngIf="isFieldInvalid('name')">Name is required</div>
+        
+    <label>Email</label>
+    <input type="text" [(ngModel)]="newTutor.email"  name="email" id="email" #email="ngModel" required>
+    <div class="error-message" *ngIf="isFieldInvalid('email')">Email is required</div>
+
+    <label>subjectsOffered</label>
+    <input type="text" [(ngModel)]="newTutor.subjectsOffered"  name="subjectsOffered" id="subjectsOffered" #subjectsOffered="ngModel" required>
+    <div class="error-message" *ngIf="isFieldInvalid('subjectsOffered')">Subjects Offered are required</div>
+
+    <label>ContactNumber</label>
+    <input type="text" [(ngModel)]="newTutor.contactNumber"  name="contactNumber" id="contactNumber" #contactNumber="ngModel" required>
+    <div class="error-message" *ngIf="isFieldInvalid('contactNumber')">Contact Number is required</div>
+
+    <label>Availability</label>
+    <input type="text" [(ngModel)]="newTutor.availability"  name="availability" id="availability" #availability="ngModel" required>
+    <div class="error-message" *ngIf="isFieldInvalid('availability')">Availability is required</div>
+
+    <button type="submit">Add Tutor</button>
+    
+</form>
+
+------------------------------------------------------------------
+
+
+tutor-form.component.ts
+
+
+import { Component, OnInit } from '@angular/core';
+import { TutorService } from '../services/tutor.service';
+
+import { Router } from '@angular/router';
+import { Tutor } from '../models/tutor.model';
+
+@Component({
+  selector: 'app-tutor-form',
+  templateUrl: './tutor-form.component.html',
+  styleUrls: ['./tutor-form.component.css']
+})
+export class TutorFormComponent implements OnInit {
+
+  constructor(private service:TutorService,private router:Router) { }
+  newTutor:Tutor={
+    tutorId:0,
+    name:'',
+    email:'',
+    subjectsOffered:'',
+    contactNumber:'',
+    availability:''
+  };
+  
+  formSubmitted:boolean=false;
+  ngOnInit(): void {
+
+  }
+  addTutor():void{
+    this.formSubmitted=true;
+    if(this.isFormValid() && this.formSubmitted==true){
+      this.service.addTutor(this.newTutor).subscribe(
+        data=>{this.newTutor=data,console.log("added"),this.router.navigate(['/viewTutors'])},
+        error=>console.log(error)
+      );
+    }
+  }
+  isFormValid():boolean{
+    if(this.isFieldInvalid('name') || this.isFieldInvalid('email')|| this.isFieldInvalid('subjectsOffered') || this.isFieldInvalid('contactNumber')|| this.isFieldInvalid('availability') ){
+      return false;
+    }
+    else{
+      return true;
+    }  
+
+  }
+  isFieldInvalid(fieldName:string):boolean{
+    let control=this.newTutor[fieldName];
+    if(control=='' && (control.touched || this.formSubmitted)){
+      return true;
+    }
+    else{
+      return false;  
+    }  
+  }
+}
+
+
+------------------------------------------------------------------
+
+
+tutor-list.component.html
+
+
+<h2>Tutor List</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Subjects Offered</th>
+            <th>Contact Number</th>
+            <th>Availability</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr *ngFor="let t of tutors">
+            <td>{{t.name}}</td>
+            <td>{{t.email}}</td>
+            <td>{{t.subjectsOffered}}</td>
+            <td>{{t.contactNumber}}</td>
+            <td>{{t.availability}}</td>
+            <td><button class="delete-button" type="submit" id="delete" (click)="Delete(t.tutorId)">Delete</button></td>
+        </tr>
+    </tbody>
+</table>
+
+------------------------------------------------------------------
+
+
+tutor-list.component.ts
+
+
+import { Component, OnInit } from '@angular/core';
+import { TutorService } from '../services/tutor.service';
+import { Tutor } from '../models/tutor.model';
+import { Router } from '@angular/router';
+
+@Component({
+  selector: 'app-tutor-list',
+  templateUrl: './tutor-list.component.html',
+  styleUrls: ['./tutor-list.component.css']
+})
+export class TutorListComponent implements OnInit {
+
+  constructor(private service:TutorService,private router:Router) { }
+  tutors:Tutor[];
+  ngOnInit(): void {
+    this.loadTutors();
+  }
+  loadTutors(){
+    this.service.getTutors().subscribe(
+      data=>{this.tutors=data,console.log("suc")},
+      error=>console.log(error)
+    );
+  }
+  Delete(tutorId:number){
+    this.router.navigate(['/confirmDelete/',tutorId])
+  }
+
+}
+
+
+------------------------------------------------------------------
+
+
+delete-confirm.component.html
+
+
+<h2>Delete Confirmation</h2>
+<p>Are you sure want to delete this item?</p><br>
+Name:<br>
+{{tutor.name}}<br>
+Email:<br>
+{{tutor.email}}<br>
+SubjectsOffered<br>
+{{tutor.contactNumber}}<br>
+Availability:<br>
+{{tutor.availability}}
+<button class="confirm-buton" type="button" (click)="confirmDelete(tutor.tutorId)">Confirm Delete</button>
+<button type="button" class="delete-confirm" (click)="cancelDelete()">Cancel</button>
+
+------------------------------------------------------------------
+
+
+delete-confirm.component.ts
+
+
+import { Component, OnInit } from '@angular/core';
+import { TutorService } from '../services/tutor.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Tutor } from '../models/tutor.model';
+
+@Component({
+  selector: 'app-delete-confirm',
+  templateUrl: './delete-confirm.component.html',
+  styleUrls: ['./delete-confirm.component.css']
+})
+export class DeleteConfirmComponent implements OnInit {
+
+  constructor(private service:TutorService,private route:ActivatedRoute,private router:Router) { }
+  tutorId:number;
+  tutor:Tutor={tutorId:0,
+    name:'',
+    email:'',
+    subjectsOffered:'',
+    contactNumber:'',
+    availability:''
+  };
+  ngOnInit(): void {
+    this.route.params.subscribe(
+      params=>this.service.getTutor(params.id).subscribe(
+        data=>{this.tutor=data,console.log("got ")},
+        error=>console.log(error)
+      )
+    );
+  }
+  confirmDelete(tutorId:number){
+    this.service.deleteTutor(tutorId).subscribe(
+      data=>{console.log("deleted"),this.router.navigate(['/viewTutors'])},
+      error=>console.log(error)
+    );
+  }
+  cancelDelete():void{
+    this.router.navigate(['/viewTutors']);
+  }
+
+}
+
+------------------------------------------------------------------
+
+app.component.html
+
+
+<app-header></app-header>
+<router-outlet></router-outlet>
+
+------------------------------------------------------------------
+
+
+app-routing.module.ts
+
+
+
+import { NgModule } from '@angular/core';
+import { Routes, RouterModule } from '@angular/router';
+import { TutorFormComponent } from './tutor-form/tutor-form.component';
+import { TutorListComponent } from './tutor-list/tutor-list.component';
+import { DeleteConfirmComponent } from './delete-confirm/delete-confirm.component';
+
+const routes: Routes = [{path:'addNewTutor',component:TutorFormComponent},{path:'viewTutors',component:TutorListComponent},{path:'confirmDelete/:id',component:DeleteConfirmComponent}];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule { }
+
+
+------------------------------------------------------------------
